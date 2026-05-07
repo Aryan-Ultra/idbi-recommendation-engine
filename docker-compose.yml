@@ -8,11 +8,8 @@
 #   - container_name: 'recommendation-engine-idbi' for lifecycle management
 # ══════════════════════════════════════════════════════════════════════════════
 
-version: "3.9"
-
 services:
   app:
-    # Use the pre-built image (built via: docker build -t recommendation-engine-idbi .)
     image: recommendation-engine-idbi:latest
     container_name: recommendation-engine-idbi
     build:
@@ -20,7 +17,6 @@ services:
       dockerfile: Dockerfile
 
     environment:
-      # UV_FROZEN=1: enforce strict lock-file compliance (mirrors report Section 3.4)
       - UV_FROZEN=1
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=INFO
@@ -30,16 +26,14 @@ services:
       - .:/app
 
       # Named volume: protects the UV virtual environment from host mount overwrite
-      # (if we bind-mounted /app, the host's absent .venv would shadow the container's)
       - venv:/app/.venv
 
       # Named volume: persists UV package cache across container restarts
       - uv-cache:/root/.cache/uv
 
-    # Default command — overridden by docker-compose run for specific tasks
     command: ["uv", "run", "python", "train_pipeline.py"]
 
-# ── Named volumes (persist across container restarts) ────────────────────────
+# ── Named volumes ─────────────────────────────────────────────────────────────
 volumes:
   venv:
     name: recommendation-engine-venv
