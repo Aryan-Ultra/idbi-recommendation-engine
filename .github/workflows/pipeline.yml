@@ -27,11 +27,9 @@ jobs:
 
     steps:
 
-      # ── Checkout ─────────────────────────────────────────────────────────────
       - name: "Checkout ci-cd-final branch"
         uses: actions/checkout@v4.2.2
 
-      # ── Install UV on runner (for Step 1 linting only) ───────────────────────
       - name: "Install UV on runner"
         uses: astral-sh/setup-uv@v5
 
@@ -41,7 +39,7 @@ jobs:
           uv sync --no-install-project
 
       # ========================================================================
-      # STEP 1 — CI: RUFF LINTING (on runner, no container)
+      # STEP 1 — CI: RUFF LINTING
       # ========================================================================
       - name: "Step 1 — CI: Ruff Linting with uv on Runner Machine"
         if: success()
@@ -51,7 +49,7 @@ jobs:
           echo "========================================================"
           uv run ruff --version
           uv run ruff check . --select F --ignore E402 --output-format grouped
-          echo "Zero lint errors — pipeline continues to Step 2"
+          echo "Zero lint errors — pipeline continues"
 
       # ========================================================================
       # STEP 2 — COMPOSE CHECK
@@ -66,7 +64,7 @@ jobs:
           echo "Compose check complete"
 
       # ========================================================================
-      # STEP 3 — START CONTAINER VIA DOCKER COMPOSE
+      # STEP 3 — START CONTAINER
       # ========================================================================
       - name: "Step 3 — Start Container via Docker Compose"
         if: success()
@@ -79,7 +77,7 @@ jobs:
           echo "Container started in detached mode"
 
       # ========================================================================
-      # STEP 4 — VERIFY CONTAINER IS RUNNING
+      # STEP 4 — VERIFY CONTAINER
       # ========================================================================
       - name: "Step 4 — Verify Container is Running"
         if: success()
@@ -91,7 +89,7 @@ jobs:
           echo "Container status verified"
 
       # ========================================================================
-      # STEP 5 — CI: SMOKE TESTS INSIDE CONTAINER (28 tests)
+      # STEP 5 — CI: SMOKE TESTS (28 tests)
       # ========================================================================
       - name: "Step 5 — CI: Smoke Tests (28 tests) Inside Container"
         if: success()
@@ -110,7 +108,7 @@ jobs:
           echo "All 28 smoke tests passed"
 
       # ========================================================================
-      # STEP 6 — CD: RUN train_pipeline.py INSIDE CONTAINER
+      # STEP 6 — CD: RUN train_pipeline.py
       # ========================================================================
       - name: "Step 6 — CD: Run train_pipeline.py with uv Inside Container"
         if: success()
@@ -124,7 +122,69 @@ jobs:
           echo "Training complete"
 
       # ========================================================================
-      # STEP 7 — POST CD: MODEL ARTIFACT CHECKS INSIDE CONTAINER (22 tests)
+      # STEP 6b — PREVIEW DATABASE TABLE IN GITHUB ACTIONS LOG
+      # Prints total rows + sample recommendations directly in the log
+      # Click this step in GitHub Actions to see your database results
+      # ========================================================================
+      - name: "Step 6b — Preview Database Table (visible in Actions log)"
+        if: success()
+        run: |
+          echo "========================================================"
+          echo " STEP 6b — Database Table Preview"
+          echo "========================================================"
+          docker compose run --rm app bash -c "
+            uv run python -c \"
+import sys
+sys.path.insert(0, '.')
+from src.database import RecommendationDatabase
+import pandas as pd
+
+db = RecommendationDatabase()
+
+print()
+print('============================================================')
+print('  ab_idbi_recommendations_uat — TABLE SUMMARY')
+print('============================================================')
+print('  Total rows     :', db.row_count())
+
+with db.engine.connect() as conn:
+    # Total customers
+    from sqlalchemy import text
+    customers = conn.execute(text('SELECT COUNT(DISTINCT customer_id) FROM ab_idbi_recommendations_uat')).scalar()
+    print('  Total customers:', customers)
+
+    # Category distribution
+    cats = pd.read_sql('SELECT category, COUNT(*) as count FROM ab_idbi_recommendations_uat GROUP BY category ORDER BY count DESC', conn)
+    print()
+    print('  Recommendations by Category:')
+    print(cats.to_string(index=False))
+
+print()
+print('  Sample — Top 10 recommendations for CUST00001:')
+print('------------------------------------------------------------')
+df = db.read_recommendations('CUST00001')
+print(df[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
+
+print()
+print('  Sample — Top 10 recommendations for CUST00050:')
+print('------------------------------------------------------------')
+df2 = db.read_recommendations('CUST00050')
+print(df2[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
+
+print()
+print('  Sample — Top 10 recommendations for CUST00100:')
+print('------------------------------------------------------------')
+df3 = db.read_recommendations('CUST00100')
+print(df3[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
+print()
+print('============================================================')
+print('  DATABASE PREVIEW COMPLETE')
+print('============================================================')
+\"
+          "
+
+      # ========================================================================
+      # STEP 7 — POST CD: ARTIFACT CHECKS (22 tests)
       # ========================================================================
       - name: "Step 7 — Post CD: Model Artifact Checks (22 tests) Inside Container"
         if: success()
