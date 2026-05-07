@@ -7,11 +7,13 @@ where α + β = 1.0  (configured in config.py)
 """
 
 import logging
+from typing import List
+
 import numpy as np
 import scipy.sparse as sp
 
-from src.config import ALS_SCORE_WEIGHT, EMBEDDING_SIMILARITY_WEIGHT, TOP_N
 from src.als_model import ALSModel
+from src.config import ALS_SCORE_WEIGHT, EMBEDDING_SIMILARITY_WEIGHT, TOP_N
 from src.embedding_model import EmbeddingModel
 
 logger = logging.getLogger(__name__)
@@ -78,9 +80,7 @@ class HybridScorer:
             candidate_item_indices=candidate_item_indices,
         )
 
-        sem_scores_raw = np.array(
-            [semantic_scores.get(idx, 0.0) for idx in candidate_item_indices]
-        )
+        sem_scores_raw = np.array([semantic_scores.get(idx, 0.0) for idx in candidate_item_indices])
 
         # Step 4: Hybrid blend
         hybrid_scores = self._alpha * als_scores_norm + self._beta * sem_scores_raw
@@ -88,11 +88,13 @@ class HybridScorer:
 
         results = []
         for rank, order_idx in enumerate(ranked_order, start=1):
-            results.append({
-                "rank": rank,
-                "item_idx": candidate_item_indices[order_idx],
-                "als_score": float(als_scores_norm[order_idx]),
-                "semantic_score": float(sem_scores_raw[order_idx]),
-                "hybrid_score": float(hybrid_scores[order_idx]),
-            })
+            results.append(
+                {
+                    "rank": rank,
+                    "item_idx": candidate_item_indices[order_idx],
+                    "als_score": float(als_scores_norm[order_idx]),
+                    "semantic_score": float(sem_scores_raw[order_idx]),
+                    "hybrid_score": float(hybrid_scores[order_idx]),
+                }
+            )
         return results
