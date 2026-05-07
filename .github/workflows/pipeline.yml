@@ -28,19 +28,17 @@ jobs:
       - name: "Install UV on runner"
         uses: astral-sh/setup-uv@v5
 
-      - name: "Set up Python 3.9 and install dependencies for linting"
-        run: |
-          uv python install 3.9
-          uv sync --no-install-project
+      - name: "Install Ruff directly on runner (for linting only)"
+        run: pip install ruff
 
-      - name: "Step 1 — CI: Ruff Linting with uv on Runner Machine"
+      - name: "Step 1 — CI: Ruff Linting on Runner Machine"
         if: success()
         run: |
           echo "========================================================"
           echo " STEP 1 — CI: Ruff Linting"
           echo "========================================================"
-          uv run ruff --version
-          uv run ruff check . --select F --ignore E402 --output-format grouped
+          ruff --version
+          ruff check . --select F --ignore E402 --output-format grouped
           echo "Zero lint errors — pipeline continues"
 
       - name: "Step 2 — Compose Check"
