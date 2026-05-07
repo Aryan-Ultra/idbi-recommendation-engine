@@ -211,4 +211,5 @@ class TestModelReadiness:
         db = RecommendationDatabase(db_url="sqlite:///test_temp.db")
         count = db.row_count()
         assert count == 0
+        db.engine.dispose()
         Path("test_temp.db").unlink(missing_ok=True)
