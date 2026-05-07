@@ -41,7 +41,7 @@ class HybridScorer:
         user_item_matrix: sp.csr_matrix,
         n: int = TOP_N,
         als_pool_size: int = 50,
-    ) -> list[dict]:
+    ) -> List[dict]:
         """
         Generate top-N hybrid recommendations for a single user.
 

@@ -5,6 +5,7 @@ Architecturally identical: produces (n_items x n_dims) L2-normalised embedding m
 """
 
 import logging
+from typing import Optional
 import pickle
 import numpy as np
 import pandas as pd
@@ -21,8 +22,8 @@ class EmbeddingModel:
     """TF-IDF based semantic embeddings (drop-in for sentence-transformers)."""
 
     def __init__(self):
-        self.vectorizer: TfidfVectorizer | None = None
-        self.embeddings: np.ndarray | None = None
+        self.vectorizer: Optional[TfidfVectorizer] = None
+        self.embeddings: Optional[np.ndarray] = None
         self.voucher_ids: list = []
         self._model_tag = f"TF-IDF (offline substitute for {EMBEDDING_MODEL_NAME})"
 

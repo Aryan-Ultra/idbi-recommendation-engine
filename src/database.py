@@ -5,6 +5,8 @@ Maps logically to the analytics_public schema / ab_idbi_recommendations_uat tabl
 """
 
 import logging
+from typing import Optional
+
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -60,7 +62,7 @@ class RecommendationDatabase:
             logger.error("Database write failed: %s", exc)
             raise
 
-    def read_recommendations(self, customer_id: str | None = None) -> pd.DataFrame:
+    def read_recommendations(self, customer_id: Optional[str] = None) -> pd.DataFrame:
         """Read back recommendations; optionally filter by customer_id."""
         query = f"SELECT * FROM {DB_TABLE}"
         if customer_id:
