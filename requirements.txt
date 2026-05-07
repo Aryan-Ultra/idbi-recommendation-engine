@@ -1,0 +1,24 @@
+# IDBI Recommendation Engine — pinned requirements
+# Install with: uv add -r requirements.txt && uv sync
+# Or directly:  pip install -r requirements.txt
+
+# ── Core ML ───────────────────────────────────────────────────────────────────
+implicit==0.7.2               # ALS collaborative filtering
+numpy==1.26.4
+scipy==1.13.1
+scikit-learn==1.5.0           # TF-IDF embeddings, LabelEncoder
+pandas==2.2.2
+joblib==1.4.2
+
+# ── NLP / Embeddings ──────────────────────────────────────────────────────────
+# sentence-transformers is listed here for documentation purposes.
+# This project uses TF-IDF offline embeddings (no HuggingFace needed).
+# Swap embedding_model.py to use SentenceTransformer if internet is available.
+sentence-transformers==3.0.1
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.30            # ORM layer → ab_idbi_recommendations_uat
+
+# ── Dev / CI ──────────────────────────────────────────────────────────────────
+pytest==8.2.2
+ruff==0.15.1                  # Rust-based linter (as per report Section 3.3)

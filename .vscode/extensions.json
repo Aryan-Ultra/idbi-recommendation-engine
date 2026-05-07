@@ -1,0 +1,26 @@
+{
+  "recommendations": [
+    // ── Python ────────────────────────────────────────────────────────────────
+    "ms-python.python",               // Python language support + IntelliSense
+    "ms-python.debugpy",              // Python debugger
+    "charliermarsh.ruff",             // Ruff linter + formatter (as per report)
+
+    // ── Testing ───────────────────────────────────────────────────────────────
+    "ms-python.python",               // Built-in pytest runner in Testing tab
+
+    // ── Docker ────────────────────────────────────────────────────────────────
+    "ms-azuretools.vscode-docker",    // Dockerfile & docker-compose.yml support
+
+    // ── Git & CI/CD ────────────────────────────────────────────────────────────
+    "github.vscode-github-actions",   // GitHub Actions YAML syntax & validation
+    "eamodio.gitlens",                // Git history and blame annotations
+
+    // ── YAML ──────────────────────────────────────────────────────────────────
+    "redhat.vscode-yaml",             // YAML validation (pipeline.yml, compose)
+
+    // ── Productivity ──────────────────────────────────────────────────────────
+    "usernamehw.errorlens",           // Inline error messages
+    "streetsidesoftware.code-spell-checker", // Spell check in comments/strings
+    "mechatroner.rainbow-csv"         // CSV column colorisation (data/ files)
+  ]
+}

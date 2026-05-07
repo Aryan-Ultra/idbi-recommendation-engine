@@ -1,0 +1,47 @@
+[project]
+name = "idbi-recommendation-engine"
+version = "1.0.0"
+description = "IDBI Bank Gift Voucher Hybrid Recommendation System with CI/CD Pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "implicit>=0.7.2",
+    "numpy>=1.26.4",
+    "pandas>=2.2.2",
+    "scikit-learn>=1.5.0",
+    "scipy>=1.13.1",
+    "sentence-transformers>=3.0.1",
+    "sqlalchemy>=2.0.30",
+    "joblib>=1.4.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2.2",
+    "ruff>=0.15.1",
+]
+
+
+# ── Ruff — mirrors report Section 3.3 exactly ────────────────────────────────
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+exclude = [".venv", "__pycache__", ".git", "model_artifacts"]
+
+[tool.ruff.lint]
+# F = Pyflakes: unused imports (F401), undefined names (F821), unused vars (F841)
+select = ["F"]
+ignore = [
+    "E402",   # module-level import not at top — preserves cross-module readability
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F401", "F811"]   # test files may reimport for clarity
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--tb=short -q"

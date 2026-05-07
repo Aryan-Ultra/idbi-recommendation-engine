@@ -1,0 +1,47 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# docker-compose.yml — IDBI Gift Voucher Recommendation Engine
+#
+# Mirrors the docker-compose.yml architecture from the project report (Table 3.4):
+#   - Bind mounts: host code → container (no image rebuild needed for code changes)
+#   - Named volumes: venv and uv-cache protected from host mount overwrite
+#   - UV_FROZEN=1: strict lock-file compliance inside container
+#   - container_name: 'recommendation-engine-idbi' for lifecycle management
+# ══════════════════════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+  app:
+    # Use the pre-built image (built via: docker build -t recommendation-engine-idbi .)
+    image: recommendation-engine-idbi:latest
+    container_name: recommendation-engine-idbi
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    environment:
+      # UV_FROZEN=1: enforce strict lock-file compliance (mirrors report Section 3.4)
+      - UV_FROZEN=1
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+
+    volumes:
+      # Bind mount: syncs host code into container without image rebuild
+      - .:/app
+
+      # Named volume: protects the UV virtual environment from host mount overwrite
+      # (if we bind-mounted /app, the host's absent .venv would shadow the container's)
+      - venv:/app/.venv
+
+      # Named volume: persists UV package cache across container restarts
+      - uv-cache:/root/.cache/uv
+
+    # Default command — overridden by docker-compose run for specific tasks
+    command: ["uv", "run", "python", "train_pipeline.py"]
+
+# ── Named volumes (persist across container restarts) ────────────────────────
+volumes:
+  venv:
+    name: recommendation-engine-venv
+  uv-cache:
+    name: recommendation-engine-uv-cache

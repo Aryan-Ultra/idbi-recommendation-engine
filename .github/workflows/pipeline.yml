@@ -1,0 +1,122 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# .github/workflows/pipeline.yml
+# IDBI Gift Voucher Recommendation Engine — CI/CD Pipeline
+#
+# Free substitute for TFS + Jenkins (exact same 3-phase, condition-gated design)
+#   TFS branch trigger  →  on.push.branches
+#   Jenkins agent pool  →  runs-on: ubuntu-latest
+#   condition: succeeded() gate  →  needs: <previous-job>
+# ══════════════════════════════════════════════════════════════════════════════
+
+name: "IDBI Recommendation Engine — CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ci-cd-final, main]
+  pull_request:
+    branches: [main]
+
+env:
+  UV_FROZEN: "1"
+  PYTHON_VERSION: "3.9"
+
+jobs:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # PHASE 1 — CI: THE GAUNTLET  (lint + 28 smoke tests)
+  # ════════════════════════════════════════════════════════════════════════════
+  ci-gauntlet:
+    name: "Phase 1 | CI — The Gauntlet"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install UV (Rust-based package manager)"
+        uses: astral-sh/setup-uv@v3
+
+      - name: "Set up Python 3.9"
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: "UV environment init & sync"
+        run: |
+          uv venv .venv
+          uv init --no-workspace 2>/dev/null || true
+          uv add -r requirements.txt 2>/dev/null || true
+          uv sync
+
+      - name: "Ruff version check"
+        run: uv run ruff --version
+
+      - name: "Ruff lint — --select F --ignore E402 --output-format grouped"
+        run: uv run ruff check . --select F --ignore E402 --output-format grouped
+
+      - name: "Generate dataset for smoke tests"
+        run: uv run python data/generate_dataset.py
+
+      - name: "Smoke tests — Category 1: Environment & Setup"
+        run: uv run pytest tests/test_smoke.py::TestEnvironmentSetup -v
+
+      - name: "Smoke tests — Category 2: Module Imports"
+        run: uv run pytest tests/test_smoke.py::TestModuleImports -v
+
+      - name: "Smoke tests — Category 3: Model Readiness"
+        run: uv run pytest tests/test_smoke.py::TestModelReadiness -v
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # PHASE 2 — EXECUTION & TRAINING: THE CORE
+  # condition: succeeded() — only runs if Phase 1 passes
+  # ════════════════════════════════════════════════════════════════════════════
+  training-core:
+    name: "Phase 2 | Execution & Training — The Core"
+    runs-on: ubuntu-latest
+    needs: ci-gauntlet
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv venv .venv && uv sync
+
+      - name: "Generate dataset"
+        run: uv run python data/generate_dataset.py
+
+      - name: "Execute train_pipeline.py (ALS + Embeddings + DB Delivery)"
+        run: uv run python train_pipeline.py
+
+      - name: "Upload model artifacts to Phase 3"
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: model_artifacts/
+          retention-days: 1
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # PHASE 3 — CD: POST-FLIGHT  (.pkl checks + teardown)
+  # condition: succeeded() — only runs if Phase 2 passes
+  # ════════════════════════════════════════════════════════════════════════════
+  cd-post-flight:
+    name: "Phase 3 | CD — Post-Flight Validation"
+    runs-on: ubuntu-latest
+    needs: training-core
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv venv .venv && uv sync
+
+      - name: "Download model artifacts from Phase 2"
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: model_artifacts/
+
+      - name: "Post-CD .pkl checks (existence + non-empty + loadable)"
+        run: uv run pytest tests/post_training/ -v -k pkl
+
+      - name: "Post-flight cleanup (equivalent to make destroy)"
+        if: always()
+        run: |
+          rm -f model_artifacts/*.pkl logs/*.log *.db
+          echo "Zero memory footprint — runner clean"

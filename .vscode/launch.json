@@ -1,0 +1,87 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    // ── 1. Run Full Training Pipeline ─────────────────────────────────────────
+    {
+      "name": "▶ Run: train_pipeline.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/train_pipeline.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "LOG_LEVEL": "INFO"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+
+    // ── 2. Generate Dataset ────────────────────────────────────────────────────
+    {
+      "name": "▶ Run: Generate Dataset",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/data/generate_dataset.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "console": "integratedTerminal"
+    },
+
+    // ── 3. Debug Current File ──────────────────────────────────────────────────
+    {
+      "name": "▶ Debug: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "console": "integratedTerminal"
+    },
+
+    // ── 4. Run Smoke Tests (pytest) ────────────────────────────────────────────
+    {
+      "name": "▶ Test: Smoke Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": ["tests/test_smoke.py", "-v", "--tb=short"],
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+
+    // ── 5. Run Post-Training Artifact Tests ────────────────────────────────────
+    {
+      "name": "▶ Test: Post-Training Artifacts",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": ["tests/post_training/", "-v", "-k", "pkl"],
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+
+    // ── 6. Run ALL Tests ───────────────────────────────────────────────────────
+    {
+      "name": "▶ Test: All Tests (50)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": ["tests/", "-v", "--tb=short"],
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

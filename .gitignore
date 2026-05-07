@@ -1,0 +1,52 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── UV / Virtual Environments ─────────────────────────────────────────────────
+.venv/
+venv/
+ENV/
+.Python
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.coveragerc
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+.ruff_cache/
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+.vscode/settings.json.local
+
+# ── Model Artifacts (large binaries — do not commit trained models) ───────────
+model_artifacts/*.pkl
+!model_artifacts/.gitkeep
+
+# ── Data (generated — do not commit CSVs to repo) ────────────────────────────
+data/*.csv
+!data/generate_dataset.py
+
+# ── Database & Logs ───────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+logs/*.log
+!logs/.gitkeep
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

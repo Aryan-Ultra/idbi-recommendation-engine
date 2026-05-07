@@ -1,0 +1,130 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+
+    // ── DEFAULT BUILD TASK (Ctrl+Shift+B) ────────────────────────────────────
+    {
+      "label": "0: Full Pipeline (data → lint → test → train)",
+      "type": "shell",
+      "command": "make all",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+      "problemMatcher": []
+    },
+
+    // ── SETUP ─────────────────────────────────────────────────────────────────
+    {
+      "label": "1: Setup UV Environment",
+      "type": "shell",
+      "command": "pip install uv && uv venv .venv && uv init --no-workspace 2>/dev/null || true && uv add -r requirements.txt && uv sync",
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+      "problemMatcher": [],
+      "detail": "Creates .venv, installs all deps, generates uv.lock"
+    },
+
+    // ── DATA ──────────────────────────────────────────────────────────────────
+    {
+      "label": "2: Generate Dataset",
+      "type": "shell",
+      "command": "uv run python data/generate_dataset.py",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    // ── LINT ──────────────────────────────────────────────────────────────────
+    {
+      "label": "3: Ruff Lint (--select F --ignore E402)",
+      "type": "shell",
+      "command": "uv run ruff --version && uv run ruff check . --select F --ignore E402 --output-format grouped",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": {
+        "owner": "ruff",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+)\\s+(.+)$",
+          "file": 1, "line": 2, "column": 3, "severity": 4, "message": 5
+        }
+      }
+    },
+
+    // ── TESTS ─────────────────────────────────────────────────────────────────
+    {
+      "label": "4: Smoke Tests (CI Gauntlet — 28 tests)",
+      "type": "shell",
+      "command": "uv run pytest tests/test_smoke.py -v",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "5: Post-Training Artifact Tests (22 tests)",
+      "type": "shell",
+      "command": "uv run pytest tests/post_training/ -v -k pkl",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "6: All Tests (50 total)",
+      "type": "shell",
+      "command": "uv run pytest tests/ -v",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    // ── TRAINING ──────────────────────────────────────────────────────────────
+    {
+      "label": "7: Train Pipeline (ALS + Embeddings + DB Delivery)",
+      "type": "shell",
+      "command": "uv run python train_pipeline.py",
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+      "problemMatcher": []
+    },
+
+    // ── DOCKER ────────────────────────────────────────────────────────────────
+    {
+      "label": "8: Docker — Build Image",
+      "type": "shell",
+      "command": "docker build -t recommendation-engine-idbi:latest .",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "9: Docker — Run Tests in Container",
+      "type": "shell",
+      "command": "docker-compose run --rm app bash -c 'uv run pytest tests/test_smoke.py -v'",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "10: Docker — Run Training in Container",
+      "type": "shell",
+      "command": "docker-compose run --rm app bash -c 'uv run python train_pipeline.py'",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "11: Docker — Destroy Container (make destroy)",
+      "type": "shell",
+      "command": "docker stop recommendation-engine-idbi 2>/dev/null; docker rm recommendation-engine-idbi 2>/dev/null; echo 'Container destroyed'",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    // ── UTILITIES ─────────────────────────────────────────────────────────────
+    {
+      "label": "12: Clean Artifacts & Logs",
+      "type": "shell",
+      "command": "make clean",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}
