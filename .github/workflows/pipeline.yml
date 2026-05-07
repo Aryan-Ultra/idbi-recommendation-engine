@@ -1,8 +1,3 @@
-# ==============================================================================
-# .github/workflows/pipeline.yml
-# IDBI Gift Voucher Recommendation Engine — GitHub Actions CI/CD Pipeline
-# ==============================================================================
-
 name: "IDBI Recommendation Engine — CI/CD Pipeline"
 
 on:
@@ -38,9 +33,6 @@ jobs:
           uv python install 3.9
           uv sync --no-install-project
 
-      # ========================================================================
-      # STEP 1 — CI: RUFF LINTING
-      # ========================================================================
       - name: "Step 1 — CI: Ruff Linting with uv on Runner Machine"
         if: success()
         run: |
@@ -51,9 +43,6 @@ jobs:
           uv run ruff check . --select F --ignore E402 --output-format grouped
           echo "Zero lint errors — pipeline continues"
 
-      # ========================================================================
-      # STEP 2 — COMPOSE CHECK
-      # ========================================================================
       - name: "Step 2 — Compose Check"
         if: success()
         run: |
@@ -63,9 +52,6 @@ jobs:
           docker compose ps
           echo "Compose check complete"
 
-      # ========================================================================
-      # STEP 3 — START CONTAINER
-      # ========================================================================
       - name: "Step 3 — Start Container via Docker Compose"
         if: success()
         run: |
@@ -76,9 +62,6 @@ jobs:
           docker compose up -d
           echo "Container started in detached mode"
 
-      # ========================================================================
-      # STEP 4 — VERIFY CONTAINER
-      # ========================================================================
       - name: "Step 4 — Verify Container is Running"
         if: success()
         run: |
@@ -88,120 +71,41 @@ jobs:
           docker compose ps -a
           echo "Container status verified"
 
-      # ========================================================================
-      # STEP 5 — CI: SMOKE TESTS (28 tests)
-      # ========================================================================
       - name: "Step 5 — CI: Smoke Tests (28 tests) Inside Container"
         if: success()
         run: |
           echo "========================================================"
           echo " STEP 5 — CI: Smoke Tests Inside Container"
           echo "========================================================"
-          docker compose run --rm app bash -c "
-            uv run python data/generate_dataset.py &&
-            uv run pytest \
-              tests/test_smoke.py::TestEnvironmentSetup \
-              tests/test_smoke.py::TestModuleImports \
-              tests/test_smoke.py::TestModelReadiness \
-              -v --tb=short
-          "
+          docker compose run --rm app bash -c "uv run python data/generate_dataset.py && uv run pytest tests/test_smoke.py::TestEnvironmentSetup tests/test_smoke.py::TestModuleImports tests/test_smoke.py::TestModelReadiness -v --tb=short"
           echo "All 28 smoke tests passed"
 
-      # ========================================================================
-      # STEP 6 — CD: RUN train_pipeline.py
-      # ========================================================================
       - name: "Step 6 — CD: Run train_pipeline.py with uv Inside Container"
         if: success()
         run: |
           echo "========================================================"
           echo " STEP 6 — CD: Run train_pipeline.py Inside Container"
           echo "========================================================"
-          docker compose run --rm app bash -c "
-            uv run python train_pipeline.py
-          "
+          docker compose run --rm app bash -c "uv run python train_pipeline.py"
           echo "Training complete"
 
-      # ========================================================================
-      # STEP 6b — PREVIEW DATABASE TABLE IN GITHUB ACTIONS LOG
-      # Prints total rows + sample recommendations directly in the log
-      # Click this step in GitHub Actions to see your database results
-      # ========================================================================
       - name: "Step 6b — Preview Database Table (visible in Actions log)"
         if: success()
         run: |
           echo "========================================================"
           echo " STEP 6b — Database Table Preview"
           echo "========================================================"
-          docker compose run --rm app bash -c "
-            uv run python -c \"
-import sys
-sys.path.insert(0, '.')
-from src.database import RecommendationDatabase
-import pandas as pd
+          docker compose run --rm app bash -c "uv run python preview_db.py"
 
-db = RecommendationDatabase()
-
-print()
-print('============================================================')
-print('  ab_idbi_recommendations_uat — TABLE SUMMARY')
-print('============================================================')
-print('  Total rows     :', db.row_count())
-
-with db.engine.connect() as conn:
-    # Total customers
-    from sqlalchemy import text
-    customers = conn.execute(text('SELECT COUNT(DISTINCT customer_id) FROM ab_idbi_recommendations_uat')).scalar()
-    print('  Total customers:', customers)
-
-    # Category distribution
-    cats = pd.read_sql('SELECT category, COUNT(*) as count FROM ab_idbi_recommendations_uat GROUP BY category ORDER BY count DESC', conn)
-    print()
-    print('  Recommendations by Category:')
-    print(cats.to_string(index=False))
-
-print()
-print('  Sample — Top 10 recommendations for CUST00001:')
-print('------------------------------------------------------------')
-df = db.read_recommendations('CUST00001')
-print(df[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
-
-print()
-print('  Sample — Top 10 recommendations for CUST00050:')
-print('------------------------------------------------------------')
-df2 = db.read_recommendations('CUST00050')
-print(df2[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
-
-print()
-print('  Sample — Top 10 recommendations for CUST00100:')
-print('------------------------------------------------------------')
-df3 = db.read_recommendations('CUST00100')
-print(df3[['rank','voucher_id','voucher_name','category','hybrid_score']].to_string(index=False))
-print()
-print('============================================================')
-print('  DATABASE PREVIEW COMPLETE')
-print('============================================================')
-\"
-          "
-
-      # ========================================================================
-      # STEP 7 — POST CD: ARTIFACT CHECKS (22 tests)
-      # ========================================================================
       - name: "Step 7 — Post CD: Model Artifact Checks (22 tests) Inside Container"
         if: success()
         run: |
           echo "========================================================"
           echo " STEP 7 — Post CD: Model Artifact Checks"
           echo "========================================================"
-          docker compose run --rm app bash -c "
-            uv run pytest \
-              tests/post_training/test_artifacts.py::TestPklArtifacts \
-              -v --tb=short
-          "
+          docker compose run --rm app bash -c "uv run pytest tests/post_training/test_artifacts.py::TestPklArtifacts -v --tb=short"
           echo "All 22 artifact checks passed"
 
-      # ========================================================================
-      # STEP 8 — DESTROY CONTAINER
-      # ========================================================================
       - name: "Step 8 — Destroy Container"
         if: always()
         run: |
